@@ -7,24 +7,16 @@ class Array
   end
   
   def index_by
-    inject({}) do |result_hash, item|
-      result_hash[yield item] = item
-      result_hash
-    end
+    map { |item| [yield(item), item] }.to_hash
   end
   
   def subarray_count(subarray)
-    count = 0
-    each_cons(subarray.length) do |array_cons|
-      count += 1 if (array_cons == subarray)
-    end
-    count
+    each_cons(subarray.length).count(subarray)
   end
   
   def occurences_count
-    inject(Hash.new(0)) do |result_hash, item|
-      result_hash[item] += 1
-      result_hash
-     end
+    Hash.new(0).tap do |result_hash|
+      each { |item| result_hash[item] += 1 }
+    end
   end
 end
