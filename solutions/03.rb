@@ -146,6 +146,10 @@ module Coupon
 end
 
 class Product
+  MAX_NAME_LENGTH = 40
+  HIGHEST_PRICE = '999.99'.to_d
+  LOWEST_PRICE = '0.01'.to_d
+  
   attr_reader :name, :price, :discount
   def initialize(product_name, price, discount = {})
     send("name=", product_name)
@@ -154,17 +158,22 @@ class Product
   end
   
   def name=(value)
-    raise "Product name is too long" if value.length > 40
+    raise "Product name is too long" if value.length > MAX_NAME_LENGTH
     @name = value
   end
   
   def price=(value)
-    raise "Invalid product price." if value < 0.01 or value > 999.99
+    if value < LOWEST_PRICE or value > HIGHEST_PRICE
+      raise "Invalid product price."
+    end
     @price = value
   end
 end
 
 class CartItem
+  MAX_QUALITY = 99
+  MIN_QUALITY = 0
+  
   attr_reader :product, :quantity
   def initialize(product, quantity)
     @product = product
@@ -173,10 +182,10 @@ class CartItem
   end
   
   def quantity=(value)
-    if (@quantity + value) <= 0
+    if (@quantity + value) <= MIN_QUALITY
       raise "Product quantity 0 or less."
     end
-    if (@quantity + value) > 99
+    if (@quantity + value) > MAX_QUALITY
       raise "Product quantity greater than 99."
     end
     @quantity = value
@@ -291,6 +300,9 @@ class Cart
 end
 
 class Invoice
+  BORDER = "+" + "-" * 48 + "+" + "-" * 10 + "+\n"
+  TEXT_FORMAT = "| %-40s %5s |%9s |\n"
+  
   def initialize(cart)
     @cart = cart
     @invoice = ""
@@ -329,12 +341,12 @@ class Invoice
   end
   
   def border_line
-    @invoice += "+" + "-" * 48 + "+" + "-" * 10 + "+\n"
+    @invoice += BORDER
   end
   
   def format_line(*args)
     if args[0] != ''
-      @invoice += "| %-40s %5s |%9s |\n" % args
+      @invoice += TEXT_FORMAT % args
     end
   end
 
