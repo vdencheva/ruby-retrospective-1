@@ -1,67 +1,67 @@
 class Song
   attr_accessor :name, :artist, :genre, :subgenre, :tags
-  def initialize(args, artist_tags)
-    @name, @artist = args[0], args[1]
-    @genre, @subgenre = args[2].split(',').map(&:strip)
-    @tags = args[3] ? args[3].split(',').map(&:strip) : [] 
-    tags_by_artist(artist_tags)
-    tags_by_genre()
+  def initialize(name, artist, genre, subgenre, tags, artist_tags)
+    @name, @artist = name, artist
+    @genre, @subgenre, @tags = genre, subgenre, tags
+    add_tags_for_artist(artist_tags)
+    add_tags_for_genre()
   end
   
-  def tags_by_artist(artist_tags)
+  def add_tags_for_artist(artist_tags)
     @tags += artist_tags[@artist] if artist_tags[@artist]
   end
   
-  def tags_by_genre()
+  def add_tags_for_genre()
     @tags.push(@genre.downcase) if @genre
     @tags.push(@subgenre.downcase) if @subgenre
   end
+ 
+  def matches?(criteria)
+    if (criteria[:tags] && not(matches_tags? criteria[:tags])) || 
+      (criteria[:name] && not(matches_name? criteria[:name])) || 
+      (criteria[:artist] && not(matches_artist? criteria[:artist])) || 
+      (criteria[:filter] && not(matches_filter? &criteria[:filter]))
+      false
+    else
+      true
+    end
+  end
   
   def matches_tags?(tags)
-    Array(tags).each do |tag|
-      if tag.end_with?('!')
-        return false if @tags.include? tag.chop
-      else
-        return false unless @tags.include? tag
-      end
+    Array(tags).all? do |tag|
+      tag.end_with?('!') ^ @tags.include?(tag.chomp('!'))
     end
-    true
   end
   
   def matches_name? (name)
-    @name == name ? true : false
+    @name == name
   end
   
   def matches_artist? (artist)
-    @artist == artist ? true : false
+    @artist == artist
   end
   
   def matches_filter? (&block)
-    block.(self)
+    block.call(self)
   end
 end
 
 class Collection
   def initialize(songs_as_string, artist_tags)
     @songs_collection = songs_as_string.lines.map do |line|
-      Song.new(line.split('.').map(&:strip), artist_tags)
+      create_song(line, artist_tags)
     end
   end
   
+  def create_song(string_to_parse, artist_tags)
+    parsed_array = string_to_parse.split('.').map(&:strip)
+    name, artist = parsed_array[0], parsed_array[1]
+    genre, subgenre = parsed_array[2].split(',').map(&:strip)
+    tags = parsed_array[3] ? parsed_array[3].split(',').map(&:strip) : [] 
+    Song.new(name, artist, genre, subgenre, tags, artist_tags)
+  end
+  
   def find(criteria)
-    result = @songs_collection.dup
-    if criteria[:tags]
-      result = result.select { |song| song.matches_tags? criteria[:tags] }
-    end
-    if criteria[:name]
-      result = result.select { |song| song.matches_name? criteria[:name] }
-    end
-    if criteria[:artist]
-      result = result.select { |song| song.matches_artist? criteria[:artist] }
-    end
-    if criteria[:filter]
-      result = result.select { |song| song.matches_filter? &criteria[:filter] }
-    end
-    result
+    @songs_collection.select { |song| song.matches? criteria }
   end
 end
