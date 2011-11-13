@@ -7,6 +7,7 @@ class Song
     add_tags_for_genre()
   end
   
+  private
   def add_tags_for_artist(artist_tags)
     @tags += artist_tags[@artist] if artist_tags[@artist]
   end
@@ -15,18 +16,7 @@ class Song
     @tags.push(@genre.downcase) if @genre
     @tags.push(@subgenre.downcase) if @subgenre
   end
- 
-  def matches?(criteria)
-    if (criteria[:tags] && not(matches_tags? criteria[:tags])) || 
-      (criteria[:name] && not(matches_name? criteria[:name])) || 
-      (criteria[:artist] && not(matches_artist? criteria[:artist])) || 
-      (criteria[:filter] && not(matches_filter? &criteria[:filter]))
-      false
-    else
-      true
-    end
-  end
-  
+    
   def matches_tags?(tags)
     Array(tags).all? do |tag|
       tag.end_with?('!') ^ @tags.include?(tag.chomp('!'))
@@ -44,6 +34,18 @@ class Song
   def matches_filter? (&block)
     block.call(self)
   end
+
+  public
+  def matches?(criteria)
+    if (criteria[:tags] && not(matches_tags? criteria[:tags])) || 
+      (criteria[:name] && not(matches_name? criteria[:name])) || 
+      (criteria[:artist] && not(matches_artist? criteria[:artist])) || 
+      (criteria[:filter] && not(matches_filter? &criteria[:filter]))
+      false
+    else
+      true
+    end
+  end
 end
 
 class Collection
@@ -53,6 +55,7 @@ class Collection
     end
   end
   
+  private
   def create_song(string_to_parse, artist_tags)
     parsed_array = string_to_parse.split('.').map(&:strip)
     name, artist = parsed_array[0], parsed_array[1]
@@ -61,6 +64,7 @@ class Collection
     Song.new(name, artist, genre, subgenre, tags, artist_tags)
   end
   
+  public
   def find(criteria)
     @songs_collection.select { |song| song.matches? criteria }
   end
